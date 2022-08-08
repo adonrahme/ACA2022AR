@@ -1,4 +1,7 @@
-import logging, os
+import logging
+import os
+import re
+import pyjokes
 
 from dotenv import load_dotenv
 from slack_bolt import App
@@ -11,13 +14,21 @@ SLACK_BOT_TOKEN = os.environ["OAuth_Token"]
 SLACK_APP_TOKEN = os.environ["very_original_token"]
 
 littlehelper = App(token=SLACK_BOT_TOKEN)
+logger = logging.getLogger(__name__)
 
-@littlehelper.event("app_mention")
-def mention_handler(body, context, payload, optinos, say, event):
-        say("Hello World")
-@littlehelper.event("message")
-def message_handler(body, context, payload, options, say, event):
-    pass
+@littlehelper.message(re.compile("^joke$"))
+def deliverJoke(message, say):
+    channel_type = message["channel_type"]
+    if channel_type != "im":
+        return
+
+    dm_channel = message["channel"]
+    user_id = message["user"]
+
+    joke = pyjokes.get_joke()
+    logger.info(f"Sent joke < {joke} > to user {user_id}")
+
+    say(text=joke, channel=dm_channel)
 
 if __name__ == "__main__":
     handler = SocketModeHandler(littlehelper, SLACK_APP_TOKEN)
